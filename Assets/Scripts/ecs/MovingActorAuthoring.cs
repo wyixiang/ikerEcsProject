@@ -164,6 +164,7 @@ public partial struct MovingActorSystem : ISystem
 
         private float2 GetNewDirection(float3 currentPos, CameraBounds bounds)
         {
+            return math.normalize(Random.NextFloat2Direction());
             // 计算指向屏幕中心的方向（更自然的转向）
             float2 center = (bounds.Min + bounds.Max) * 0.5f;
             float2 toCenter = math.normalize(center - new float2(currentPos.x, currentPos.y));
@@ -174,6 +175,8 @@ public partial struct MovingActorSystem : ISystem
                 return math.normalize(toCenter + Random.NextFloat2Direction() * 0.5f);
             }
             return math.normalize(Random.NextFloat2Direction());
+            
+            
         }
     }
 }
