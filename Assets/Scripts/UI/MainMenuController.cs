@@ -2,7 +2,7 @@
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace TMG.Survivors
+namespace TMG.IkerEcs
 {
     public class MainMenuController : MonoBehaviour
     {

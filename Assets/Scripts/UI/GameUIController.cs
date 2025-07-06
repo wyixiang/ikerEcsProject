@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace TMG.Survivors
+namespace TMG.IkerEcs
 {
     public class GameUIController : MonoBehaviour
     {

@@ -83,7 +83,7 @@ public partial struct PredatorSystem : ISystem
             .WithAll<Food>()                  // 必须包含Food组件
             .WithAll<LocalTransform>()        // 必须包含LocalTransform组件
             .Build(ref state);
-        _random = Random.CreateFromIndex((uint)System.DateTime.Now.Ticks);
+        _random = Random.CreateFromIndex((uint)23310);
         _predatorQuery = new EntityQueryBuilder(Allocator.Temp)
             .WithAll<Predator>()
             .Build(ref state);

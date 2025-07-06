@@ -49,7 +49,7 @@ public partial struct ActorSpawnerSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        _random = Random.CreateFromIndex((uint)System.DateTime.Now.Ticks);
+        _random = Random.CreateFromIndex((uint)233);
     }
 
     [BurstCompile]
