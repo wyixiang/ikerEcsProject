@@ -93,15 +93,9 @@ public partial struct MovingActorSystem : ISystem
     // 更新摄像机边界
     private void UpdateCameraBounds(ref SystemState state)
     {
-        if (Camera.main != null)
+        if (SystemAPI.TryGetSingleton<CameraBounds>(out var bounds))
         {
-            Vector3 min = Camera.main.ViewportToWorldPoint(new Vector3(0, 0, 0));
-            Vector3 max = Camera.main.ViewportToWorldPoint(new Vector3(1, 1, 0));
-            
-            _cameraBounds = new CameraBounds {
-                Min = new float2(min.x, min.y),
-                Max = new float2(max.x, max.y)
-            };
+            _cameraBounds = bounds;
         }
     }
 

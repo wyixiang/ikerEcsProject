@@ -36,6 +36,7 @@ public class ActorSpawnerAuthoring : MonoBehaviour
                 SpawnAreaSize = authoring.SpawnAreaSize,
                 SpawnCenter = authoring.transform.position
             });
+            
         }
     }
 }

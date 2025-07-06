@@ -76,7 +76,7 @@ public partial struct PredatorSystem : ISystem
     private Random _random;
     private CameraBounds _cameraBounds;
 
-    [BurstCompile]
+    // [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         _foodQuery = new EntityQueryBuilder(Allocator.Temp)
@@ -89,6 +89,11 @@ public partial struct PredatorSystem : ISystem
             .Build(ref state);
         
         state.EntityManager.CreateEntity(typeof(PredatorCount));
+        
+        _cameraBounds = new CameraBounds {
+            Min = new float2(-10, -10),
+            Max = new float2(10, 10)
+        };
     }
 
     [BurstCompile]
@@ -142,15 +147,10 @@ public partial struct PredatorSystem : ISystem
 
     private void UpdateCameraBounds(ref SystemState state)
     {
-        if (Camera.main == null) return;
-        
-        Vector3 min = Camera.main.ViewportToWorldPoint(new Vector3(0, 0, 0));
-        Vector3 max = Camera.main.ViewportToWorldPoint(new Vector3(1, 1, 0));
-        
-        _cameraBounds = new CameraBounds {
-            Min = new float2(min.x, min.y),
-            Max = new float2(max.x, max.y)
-        };
+        if (SystemAPI.TryGetSingleton<CameraBounds>(out var bounds))
+        {
+            _cameraBounds = bounds;
+        }
     }
 
     [BurstCompile]

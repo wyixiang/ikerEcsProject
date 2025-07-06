@@ -289,7 +289,7 @@ PlayerSettings:
   AndroidReportGooglePlayAppDependencies: 1
   androidSymbolsSizeThreshold: 800
   m_BuildTargetIcons:
-  - m_BuildTarget:
+  - m_BuildTarget: 
     m_Icons:
     - serializedVersion: 2
       m_Icon: {fileID: 2800000, guid: 24bd13d56fcea5146901c6e80136b7fd, type: 3}
@@ -920,7 +920,7 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 0
   windowsGamepadBackendHint: 0
   cloudProjectId: 
   framebufferDepthMemorylessMode: 0
