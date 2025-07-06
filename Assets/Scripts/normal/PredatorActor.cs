@@ -128,7 +128,7 @@ public class PredatorActor : MonoBehaviour
     // 分裂新捕猎者
     private void Replicate()
     {
-        if (predatorActorCount > 200)
+        if (predatorActorCount > 100)
         {
             return;
         }
