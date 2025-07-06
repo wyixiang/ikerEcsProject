@@ -139,14 +139,12 @@ public partial struct MovingActorSystem : ISystem
             {
                 movingData.RandomDirection.x *= -1; // X轴反向
                 hitBoundary = true;
-                newPos.x = math.clamp(newPos.x, Bounds.Min.x, Bounds.Max.x);
             }
             
             if (newPos.y <= Bounds.Min.y || newPos.y >= Bounds.Max.y)
             {
                 movingData.RandomDirection.y *= -1; // Y轴反向
                 hitBoundary = true;
-                newPos.y = math.clamp(newPos.y, Bounds.Min.y, Bounds.Max.y);
             }
 
             // 如果碰到边界或者需要改变方向，重新计算方向
@@ -154,8 +152,13 @@ public partial struct MovingActorSystem : ISystem
             {
                 movingData.RandomDirection = GetNewDirection(currentPos, Bounds);
                 movingData.Timer = 0f;
+                newPos = transform.Position + 
+                                new float3(movingData.RandomDirection.x, movingData.RandomDirection.y, 0) * 
+                                movingData.MoveSpeed * DeltaTime;
             }
-
+            
+            newPos.x = math.clamp(newPos.x, Bounds.Min.x, Bounds.Max.x);
+            newPos.y = math.clamp(newPos.y, Bounds.Min.y, Bounds.Max.y);
             // 确保Z轴为0并应用新位置
             newPos.z = 0;
 

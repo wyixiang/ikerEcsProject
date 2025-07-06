@@ -157,7 +157,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 3
-  directionChangeInterval: 5
+  directionChangeInterval: 2
 --- !u!114 &-75201019034329344
 MonoBehaviour:
   m_ObjectHideFlags: 0
