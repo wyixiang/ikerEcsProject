@@ -9,3 +9,6 @@
 *.sln
 /Temp
 /Logs
+/.utmp
+Assets/Resources/PerformanceTestRunInfo.json.meta
+Assets/Resources/PerformanceTestRunSettings.json.meta
