@@ -26,11 +26,15 @@ public class ActorSpawner : MonoBehaviour
                 Random.Range(-spawnAreaSize.y / 2, spawnAreaSize.y / 2)
             );
             
-            Instantiate(actorPrefab, randomPos, Quaternion.identity).name = $"Cat_{i}";
+            GameObject newCatActor = Instantiate(actorPrefab, randomPos, Quaternion.identity);
+            newCatActor.name = $"Cat_{i}";
+            newCatActor.tag = "Cat"; 
         }
         
         // 生成初始捕食者（居中）
-        Instantiate(predatorPrefab, Vector3.zero, Quaternion.identity);
+        GameObject newDogActor = Instantiate(predatorPrefab, Vector3.zero, Quaternion.identity);
+        newDogActor.name = "Dog_0";
+        newDogActor.tag = "Dog";
     }
 
     // 可视化生成区域（仅在编辑器可见）

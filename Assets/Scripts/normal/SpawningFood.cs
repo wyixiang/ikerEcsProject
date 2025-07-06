@@ -6,6 +6,7 @@ public class SpawningFood : MonoBehaviour
     [SerializeField] private float spawnInterval = 2f;
 
     private float _timer;
+    static private int foodIndex = 1;
 
     void Update()
     {
@@ -19,6 +20,9 @@ public class SpawningFood : MonoBehaviour
 
     private void SpawnProjectile()
     {
-        GameObject projectile = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
+        GameObject newActor = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
+        newActor.name = $"Food_{foodIndex}";
+        newActor.tag = "Food";
+        foodIndex += 1;
     }
 }

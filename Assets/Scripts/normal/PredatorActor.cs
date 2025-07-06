@@ -128,10 +128,15 @@ public class PredatorActor : MonoBehaviour
     // 分裂新捕猎者
     private void Replicate()
     {
+        if (predatorActorCount > 200)
+        {
+            return;
+        }
         predatorActorCount += 1;
         // 简单创建新捕猎者
         GameObject newPredator = Instantiate(actorPrefab);
-        newPredator.name = $"Dog_{predatorActorCount}";;
+        newPredator.name = $"Dog_{predatorActorCount}";
+        newPredator.tag = "Dog";
         
         // 随机位置偏移
         Vector3 offset = new Vector3(
