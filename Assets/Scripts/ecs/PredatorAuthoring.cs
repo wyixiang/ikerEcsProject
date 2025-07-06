@@ -13,6 +13,12 @@ public struct FoodLocked : IComponentData
     public Entity LockedBy; // 锁定该食物的捕食者实体
 }
 
+// 新增全局计数器组件
+public struct PredatorCount : IComponentData
+{
+    public int Value;
+}
+
 public struct Predator : IComponentData
 {
     public Entity TargetFood;      // 当前目标食物
@@ -66,6 +72,7 @@ public class PredatorAuthoring : MonoBehaviour
 public partial struct PredatorSystem : ISystem
 {
     private EntityQuery _foodQuery;
+    private EntityQuery _predatorQuery;
     private Random _random;
     private CameraBounds _cameraBounds;
 
@@ -77,6 +84,11 @@ public partial struct PredatorSystem : ISystem
             .WithAll<LocalTransform>()        // 必须包含LocalTransform组件
             .Build(ref state);
         _random = Random.CreateFromIndex((uint)System.DateTime.Now.Ticks);
+        _predatorQuery = new EntityQueryBuilder(Allocator.Temp)
+            .WithAll<Predator>()
+            .Build(ref state);
+        
+        state.EntityManager.CreateEntity(typeof(PredatorCount));
     }
 
     [BurstCompile]
@@ -115,11 +127,16 @@ public partial struct PredatorSystem : ISystem
             Ecb = ecb
         }.ScheduleParallel();
 
+        // 获取当前捕食者数量
+        int currentCount = _predatorQuery.CalculateEntityCount();
+        if (currentCount >= 200) return; // 达到上限直接返回
+        
         // 第三阶段：繁殖
         new ReproduceJob
         {
             Ecb = ecb,
-            Random = _random
+            Random = _random,
+            CurrentCount = currentCount
         }.Schedule();
     }
 
@@ -270,6 +287,7 @@ public partial struct PredatorSystem : ISystem
     {
         public EntityCommandBuffer.ParallelWriter Ecb;
         public Random Random;
+        public int CurrentCount;
 
         private void Execute(
             [EntityIndexInQuery] int index,
@@ -277,6 +295,8 @@ public partial struct PredatorSystem : ISystem
             in ReproductionRequest request,
             in Predator predator)
         {
+            if (CurrentCount >= 200) return; // 数量检查
+            
             Ecb.RemoveComponent<ReproductionRequest>(index, entity);
             Entity newPredator = Ecb.Instantiate(index, entity);
             float3 offset = Random.NextFloat3Direction() * 2f;
@@ -291,5 +311,23 @@ public partial struct PredatorSystem : ISystem
                 RandomDirection = math.normalize(Random.NextFloat3())
             });
         }
+    }
+}
+
+
+// 计数器更新系统
+[BurstCompile]
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(PredatorSystem))]
+public partial struct PredatorCountSystem : ISystem
+{
+    [BurstCompile]
+    public void OnUpdate(ref SystemState state)
+    {
+        var predatorQuery = SystemAPI.QueryBuilder().WithAll<Predator>().Build();
+        int count = predatorQuery.CalculateEntityCount();
+        
+        var counter = SystemAPI.GetSingletonRW<PredatorCount>();
+        counter.ValueRW.Value = count;
     }
 }
