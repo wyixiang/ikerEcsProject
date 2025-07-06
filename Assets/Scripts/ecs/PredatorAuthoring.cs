@@ -134,7 +134,7 @@ public partial struct PredatorSystem : ISystem
 
         // 获取当前捕食者数量
         int currentCount = _predatorQuery.CalculateEntityCount();
-        if (currentCount >= 100) return; // 达到上限直接返回
+        if (currentCount >= 300) return; // 达到上限直接返回
         
         // 第三阶段：繁殖
         new ReproduceJob
@@ -295,7 +295,7 @@ public partial struct PredatorSystem : ISystem
             in ReproductionRequest request,
             in Predator predator)
         {
-            if (CurrentCount >= 100) return; // 数量检查
+            if (CurrentCount >= 300) return; // 数量检查
             
             Ecb.RemoveComponent<ReproductionRequest>(index, entity);
             Entity newPredator = Ecb.Instantiate(index, entity);
