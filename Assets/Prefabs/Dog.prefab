@@ -499,6 +499,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   actorPrefab: {fileID: 8167117568792472304}
   moveSpeed: 3
-  eatCountToReplicate: 3
+  eatCountToReplicate: 1
   eatRange: 1
   chaseRange: 10

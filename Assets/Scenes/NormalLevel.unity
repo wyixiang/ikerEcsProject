@@ -1883,7 +1883,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   actorPrefab: {fileID: 8167117568792472304, guid: b5c6c14d1f2f1574090b5bd9888990c2, type: 3}
-  spawnCount: 10
+  spawnCount: 1000
   spawnAreaSize: {x: 10, y: 0}
   predatorPrefab: {fileID: 8167117568792472304, guid: 37710813624619e4fb958cb53fff3f65, type: 3}
 --- !u!4 &1403848716

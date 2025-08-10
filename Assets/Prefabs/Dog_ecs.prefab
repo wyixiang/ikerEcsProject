@@ -499,4 +499,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MoveSpeed: 3
   EatRange: 1
-  FoodToReproduce: 3
+  FoodToReproduce: 1

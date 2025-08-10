@@ -6,7 +6,7 @@ public class PredatorActor : MonoBehaviour
     [SerializeField] private GameObject actorPrefab;
     // 捕猎者参数
     [SerializeField] public float moveSpeed = 3f;
-    [SerializeField] public int eatCountToReplicate = 3;
+    [SerializeField] public int eatCountToReplicate = 1;
     [SerializeField] public float eatRange = 1f;
     [SerializeField] public float chaseRange = 10f;
     
@@ -128,7 +128,7 @@ public class PredatorActor : MonoBehaviour
     // 分裂新捕猎者
     private void Replicate()
     {
-        if (predatorActorCount > 300)
+        if (predatorActorCount > 10000)
         {
             return;
         }

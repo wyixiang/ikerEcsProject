@@ -164,7 +164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActorPrefab: {fileID: 8167117568792472304, guid: 18d46fac3fa346b4595746a478dacb94, type: 3}
-  SpawnCount: 10
+  SpawnCount: 1000
   SpawnAreaSize: {x: 10, y: 10, z: 10}
   PredatorPrefab: {fileID: 8167117568792472304, guid: 0acf8358ed71a634491586586ca530a1, type: 3}
 --- !u!1660057539 &9223372036854775807

@@ -158,7 +158,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3
   directionChangeInterval: 2
-  useZAxis: 0
+  screenPadding: 0.5
 --- !u!114 &1918398714859721166
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -172,4 +172,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 2661740574328797262, guid: 7def67fb59c2b284993ecbd63aaf00a2, type: 3}
-  spawnInterval: 2
+  spawnInterval: 1
