@@ -7,13 +7,11 @@ using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
 // 组件定义
-// 新增组件
 public struct FoodLocked : IComponentData
 {
-    public Entity LockedBy; // 锁定该食物的捕食者实体
+    public Entity LockedBy;
 }
 
-// 新增全局计数器组件
 public struct PredatorCount : IComponentData
 {
     public int Value;
@@ -21,12 +19,12 @@ public struct PredatorCount : IComponentData
 
 public struct Predator : IComponentData
 {
-    public Entity TargetFood;      // 当前目标食物
-    public float MoveSpeed;       // 移动速度
-    public float EatRange;        // 进食范围
-    public int FoodEaten;         // 已吃食物数量
-    public int FoodToReproduce;   // 繁殖所需食物量
-    public float3 RandomDirection; // 随机移动方向
+    public Entity TargetFood;
+    public float MoveSpeed;
+    public float EatRange;
+    public int FoodEaten;
+    public int FoodToReproduce;
+    public float3 RandomDirection;
 }
 
 public struct ReproductionRequest : IComponentData
@@ -34,7 +32,7 @@ public struct ReproductionRequest : IComponentData
     public float3 SpawnPosition;
 }
 
-// Authoring组件（编辑器配置）
+// Authoring组件
 public class PredatorAuthoring : MonoBehaviour
 {
     public float MoveSpeed = 3f;
@@ -63,9 +61,6 @@ public class PredatorAuthoring : MonoBehaviour
     }
 }
 
-
-
-// 捕食者系统（完整逻辑）
 [BurstCompile]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(TransformSystemGroup))]
@@ -73,17 +68,15 @@ public partial struct PredatorSystem : ISystem
 {
     private EntityQuery _foodQuery;
     private EntityQuery _predatorQuery;
-    private Random _random;
     private CameraBounds _cameraBounds;
 
-    // [BurstCompile]
+    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         _foodQuery = new EntityQueryBuilder(Allocator.Temp)
-            .WithAll<Food>()                  // 必须包含Food组件
-            .WithAll<LocalTransform>()        // 必须包含LocalTransform组件
+            .WithAll<Food, LocalTransform>()
             .Build(ref state);
-        _random = Random.CreateFromIndex((uint)23310);
+            
         _predatorQuery = new EntityQueryBuilder(Allocator.Temp)
             .WithAll<Predator>()
             .Build(ref state);
@@ -108,17 +101,21 @@ public partial struct PredatorSystem : ISystem
 
         float deltaTime = SystemAPI.Time.DeltaTime;
         
-        // 获取所有食物实体和位置
+        // 获取食物数据
         var foodEntities = _foodQuery.ToEntityArray(Allocator.TempJob);
         var foodTransforms = _foodQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
         var foodLockedLookup = SystemAPI.GetComponentLookup<FoodLocked>(false);
 
+        // 使用基于时间的随机种子
+        uint randomSeed = (uint)(SystemAPI.Time.ElapsedTime * 1000);
+        
         // 第一阶段：寻找目标
         new FindTargetJob {
             FoodEntities = foodEntities,
             FoodTransforms = foodTransforms,
             FoodLockedLookup = foodLockedLookup,
-            Ecb = ecb
+            Ecb = ecb,
+            RandomSeed = randomSeed
         }.ScheduleParallel();
 
         // 第二阶段：移动和进食
@@ -129,20 +126,26 @@ public partial struct PredatorSystem : ISystem
             FoodTransforms = foodTransforms,
             FoodLockedLookup = foodLockedLookup,
             Bounds = _cameraBounds,
-            Ecb = ecb
+            Ecb = ecb,
+            RandomSeed = randomSeed + 1 // 不同种子
         }.ScheduleParallel();
 
-        // 获取当前捕食者数量
-        int currentCount = _predatorQuery.CalculateEntityCount();
-        if (currentCount >= 10000) return; // 达到上限直接返回
-        
         // 第三阶段：繁殖
-        new ReproduceJob
+        int currentCount = _predatorQuery.CalculateEntityCount();
+        if (currentCount < 10000)
         {
-            Ecb = ecb,
-            Random = _random,
-            CurrentCount = currentCount
-        }.Schedule();
+            new ReproduceJob {
+                Ecb = ecb,
+                RandomSeed = randomSeed + 2,
+                CurrentCount = currentCount
+            }.Schedule();
+        }
+        
+        // 更新计数器
+        state.EntityManager.SetComponentData(
+            SystemAPI.GetSingletonEntity<PredatorCount>(),
+            new PredatorCount { Value = currentCount }
+        );
     }
 
     private void UpdateCameraBounds(ref SystemState state)
@@ -161,17 +164,22 @@ public partial struct PredatorSystem : ISystem
         [ReadOnly] public NativeArray<LocalTransform> FoodTransforms;
         [ReadOnly] public ComponentLookup<FoodLocked> FoodLockedLookup;
         public EntityCommandBuffer.ParallelWriter Ecb;
+        public uint RandomSeed;
 
         private void Execute(
             [EntityIndexInQuery] int index,
             Entity entity,
-            ref Predator predator)
+            ref Predator predator,
+            in LocalTransform transform)
         {
             // 已有有效目标则跳过
             if (predator.TargetFood != Entity.Null && 
                 FoodEntities.Contains(predator.TargetFood))
                 return;
 
+            // 创建线程安全的Random实例
+            var random = Random.CreateFromIndex(RandomSeed + (uint)index);
+            
             // 寻找最近食物
             float minDist = float.MaxValue;
             Entity closestFood = Entity.Null;
@@ -179,8 +187,10 @@ public partial struct PredatorSystem : ISystem
             for (int i = 0; i < FoodEntities.Length; i++)
             {
                 if (FoodLockedLookup.HasComponent(FoodEntities[i])) 
-                    continue; // 跳过已锁定食物
-                float dist = math.lengthsq(FoodTransforms[i].Position - predator.RandomDirection);
+                    continue;
+                    
+                // 修正：使用transform.Position而不是RandomDirection
+                float dist = math.lengthsq(FoodTransforms[i].Position - transform.Position);
                 if (dist < minDist)
                 {
                     minDist = dist;
@@ -192,6 +202,22 @@ public partial struct PredatorSystem : ISystem
             {
                 Ecb.AddComponent(index, closestFood, new FoodLocked { LockedBy = entity });
                 predator.TargetFood = closestFood;
+                
+                // 更新随机方向（朝向目标）
+                predator.RandomDirection = math.normalize(
+                    FoodTransforms[FoodEntities.IndexOf(closestFood)].Position - transform.Position
+                );
+                
+                Ecb.SetComponent(index, entity, predator);
+            }
+            else
+            {
+                // 没有找到食物时更新随机方向
+                predator.RandomDirection = math.normalize(new float3(
+                    random.NextFloat(-1f, 1f),
+                    random.NextFloat(-1f, 1f),
+                    0
+                ));
                 Ecb.SetComponent(index, entity, predator);
             }
         }
@@ -207,6 +233,7 @@ public partial struct PredatorSystem : ISystem
         public float DeltaTime;
         public CameraBounds Bounds;
         public EntityCommandBuffer.ParallelWriter Ecb;
+        public uint RandomSeed;
 
         private void Execute(
             [EntityIndexInQuery] int index,
@@ -214,11 +241,12 @@ public partial struct PredatorSystem : ISystem
             ref Predator predator,
             ref LocalTransform transform)
         {
+            var random = Random.CreateFromIndex(RandomSeed + (uint)index);
+            
             // 追逐目标
             if (predator.TargetFood != Entity.Null && 
                 FoodEntities.Contains(predator.TargetFood))
             {
-                // 检查目标是否仍被自己锁定
                 if (!FoodLockedLookup.TryGetComponent(predator.TargetFood, out var locked) || 
                     locked.LockedBy != entity)
                 {
@@ -233,50 +261,51 @@ public partial struct PredatorSystem : ISystem
                     float3 dir = math.normalize(targetPos - transform.Position);
                     transform.Position += dir * predator.MoveSpeed * DeltaTime;
 
-                    // 检查进食距离
                     if (math.distance(transform.Position, targetPos) <= predator.EatRange)
                     {
-                        // 进食时释放锁定
                         Ecb.RemoveComponent<FoodLocked>(index, predator.TargetFood);
                         Ecb.DestroyEntity(index, predator.TargetFood);
                         predator.FoodEaten++;
                         predator.TargetFood = Entity.Null;
 
-                        // 检查繁殖条件
-                        if (predator.FoodEaten == predator.FoodToReproduce)
+                        if (predator.FoodEaten >= predator.FoodToReproduce)
                         {
                             Ecb.AddComponent(index, entity, 
-                                new ReproductionRequest { SpawnPosition = transform.Position });
+                                new ReproductionRequest { 
+                                    SpawnPosition = transform.Position 
+                                });
                             predator.FoodEaten = 0;
-                            Ecb.SetComponent(index, entity, predator);
                         }
+                        Ecb.SetComponent(index, entity, predator);
                     }
                 }
-                
             }
             else // 随机移动
             {
-                transform.Position += predator.RandomDirection * predator.MoveSpeed * 0.5f * DeltaTime;
-                // 计算新位置（Z轴固定为0）
-                float3 currentPos = transform.Position;
-                float3 newPos = transform.Position + 
-                                new float3(predator.RandomDirection.x, predator.RandomDirection.y, 0) * 
-                                predator.MoveSpeed * DeltaTime;
+                transform.Position += predator.RandomDirection * predator.MoveSpeed * DeltaTime;
+                
                 // 边界检查和方向修正
                 bool hitBoundary = false;
-            
+                float3 newPos = transform.Position;
+                
                 if (newPos.x <= Bounds.Min.x || newPos.x >= Bounds.Max.x)
                 {
-                    predator.RandomDirection.x *= -1; // X轴反向
+                    predator.RandomDirection.x *= -1;
                     hitBoundary = true;
                     newPos.x = math.clamp(newPos.x, Bounds.Min.x, Bounds.Max.x);
                 }
             
                 if (newPos.y <= Bounds.Min.y || newPos.y >= Bounds.Max.y)
                 {
-                    predator.RandomDirection.y *= -1; // Y轴反向
+                    predator.RandomDirection.y *= -1;
                     hitBoundary = true;
                     newPos.y = math.clamp(newPos.y, Bounds.Min.y, Bounds.Max.y);
+                }
+                
+                if (hitBoundary)
+                {
+                    transform.Position = newPos;
+                    Ecb.SetComponent(index, entity, predator);
                 }
             }
         }
@@ -286,7 +315,7 @@ public partial struct PredatorSystem : ISystem
     public partial struct ReproduceJob : IJobEntity
     {
         public EntityCommandBuffer.ParallelWriter Ecb;
-        public Random Random;
+        public uint RandomSeed;
         public int CurrentCount;
 
         private void Execute(
@@ -295,39 +324,27 @@ public partial struct PredatorSystem : ISystem
             in ReproductionRequest request,
             in Predator predator)
         {
-            if (CurrentCount >= 10000) return; // 数量检查
+            if (CurrentCount >= 10000) return;
+            
+            var random = Random.CreateFromIndex(RandomSeed + (uint)index);
             
             Ecb.RemoveComponent<ReproductionRequest>(index, entity);
             Entity newPredator = Ecb.Instantiate(index, entity);
-            float3 offset = Random.NextFloat3Direction() * 2f;
+            
+            float3 offset = random.NextFloat3Direction() * 2f;
+            offset.z = 0; // 确保Z轴为0
+            
             Ecb.SetComponent(index, newPredator, 
                 LocalTransform.FromPosition(request.SpawnPosition + offset));
+                
             Ecb.SetComponent(index, newPredator, new Predator {
-                MoveSpeed = 3f, // 明确设置基础值
-                EatRange = 1f,
-                FoodToReproduce = 3, // 固定值（避免异常继承）
-                FoodEaten = 0, // 必须重置
+                MoveSpeed = predator.MoveSpeed,
+                EatRange = predator.EatRange,
+                FoodToReproduce = predator.FoodToReproduce,
+                FoodEaten = 0,
                 TargetFood = Entity.Null,
-                RandomDirection = math.normalize(Random.NextFloat3())
+                RandomDirection = math.normalize(random.NextFloat3())
             });
         }
-    }
-}
-
-
-// 计数器更新系统
-[BurstCompile]
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(PredatorSystem))]
-public partial struct PredatorCountSystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        var predatorQuery = SystemAPI.QueryBuilder().WithAll<Predator>().Build();
-        int count = predatorQuery.CalculateEntityCount();
-        
-        var counter = SystemAPI.GetSingletonRW<PredatorCount>();
-        counter.ValueRW.Value = count;
     }
 }
