@@ -74,14 +74,17 @@ public partial struct PredatorSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         _foodQuery = new EntityQueryBuilder(Allocator.Temp)
-            .WithAll<Food, LocalTransform>()
+            .WithAll<Food>()
+            .WithAll<LocalTransform>()
             .Build(ref state);
             
         _predatorQuery = new EntityQueryBuilder(Allocator.Temp)
             .WithAll<Predator>()
             .Build(ref state);
         
-        state.EntityManager.CreateEntity(typeof(PredatorCount));
+        var countEntity = state.EntityManager.CreateEntity();
+        state.EntityManager.AddComponent<PredatorCount>(countEntity);
+        state.EntityManager.SetComponentData(countEntity, new PredatorCount { Value = 0 });
         
         _cameraBounds = new CameraBounds {
             Min = new float2(-10, -10),
